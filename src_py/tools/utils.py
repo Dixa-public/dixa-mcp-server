@@ -11,7 +11,23 @@ def get_api_key() -> str:
     """Get the Dixa API key from environment variable."""
     api_key = os.getenv("DIXA_API_KEY")
     if not api_key:
-        raise ValueError("DIXA_API_KEY environment variable is not set")
+        # Check if the variable exists but is empty
+        if "DIXA_API_KEY" in os.environ:
+            raise ValueError(
+                "DIXA_API_KEY environment variable is set but is empty. "
+                "Please check your FastMCP Cloud dashboard settings."
+            )
+        raise ValueError(
+            "DIXA_API_KEY environment variable is not set. "
+            "Please set it in your FastMCP Cloud dashboard under Environment Variables."
+        )
+    # Trim whitespace in case there are accidental spaces
+    api_key = api_key.strip()
+    if not api_key:
+        raise ValueError(
+            "DIXA_API_KEY environment variable contains only whitespace. "
+            "Please check your FastMCP Cloud dashboard settings."
+        )
     return api_key
 
 
@@ -37,15 +53,19 @@ def make_request(
     """
     api_key = get_api_key()
     
-    headers = {
-        "Authorization": api_key,
-        "Content-Type": "application/json",
-    }
-    
+    # Log that API key is present (without exposing the value)
     if log:
+        log.debug(f"API key is set (length: {len(api_key)} characters)")
         log.debug(f"Request {method} {url}")
         if json_data:
             log.debug(f"Request body: {json.dumps(json_data, indent=2)}")
+    
+    # Dixa API expects the Authorization header with Bearer prefix
+    # Format: "Bearer <api_key>"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
     
     try:
         response = requests.request(
@@ -60,10 +80,26 @@ def make_request(
         response_text = response.text
         
         if not response.ok:
-            error_msg = (
-                f"Failed to fetch data: {response.status_code} {response.reason}\n"
-                f"Response: {response_text}"
-            )
+            # Provide more helpful error messages for 401 errors
+            if response.status_code == 401:
+                error_msg = (
+                    f"Authentication failed (401 Unauthorized). "
+                    f"This usually means:\n"
+                    f"1. The DIXA_API_KEY environment variable is not set correctly in FastMCP Cloud dashboard\n"
+                    f"2. The API key is invalid or has expired\n"
+                    f"3. The API key format is incorrect\n\n"
+                    f"Please verify:\n"
+                    f"- Go to your FastMCP Cloud dashboard\n"
+                    f"- Check that DIXA_API_KEY is set under Environment Variables\n"
+                    f"- Ensure there are no extra spaces or quotes around the key\n"
+                    f"- Verify the API key is valid in your Dixa account\n\n"
+                    f"Response: {response_text}"
+                )
+            else:
+                error_msg = (
+                    f"Failed to fetch data: {response.status_code} {response.reason}\n"
+                    f"Response: {response_text}"
+                )
             raise Exception(error_msg)
         
         # Handle 204 No Content responses

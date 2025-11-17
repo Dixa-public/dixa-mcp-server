@@ -3,13 +3,34 @@
  */
 
 /**
- * Gets the Dixa API key from environment variables with validation
+ * Gets the Dixa API key from session context or environment variables
+ * Priority: session auth > environment variable
+ * @param session Optional session context that may contain auth information
  * @throws Error if the API key is not set or is empty
  */
-export function getDixaApiKey(): string {
+export function getDixaApiKey(session?: Record<string, unknown> | undefined): string {
+  // First, try to get API key from session context (for FastMCP Cloud config overrides)
+  if (session) {
+    // Check common auth field names that might be used in MCP config
+    const sessionApiKey = 
+      (session.apiKey as string) ||
+      (session.token as string) ||
+      (session.auth as string) ||
+      (session.DIXA_API_KEY as string) ||
+      (session.dixaApiKey as string);
+    
+    if (sessionApiKey && typeof sessionApiKey === 'string') {
+      const trimmed = sessionApiKey.trim();
+      if (trimmed) {
+        return trimmed;
+      }
+    }
+  }
+
+  // Fall back to environment variable
   if (!process.env.DIXA_API_KEY) {
     throw new Error(
-      'DIXA_API_KEY environment variable is not set. Please set it in your FastMCP Cloud dashboard under Environment Variables.'
+      'DIXA_API_KEY environment variable is not set. Please set it in your FastMCP Cloud dashboard under Environment Variables or provide it via the "auth" field in MCP server configuration.'
     );
   }
 
@@ -25,9 +46,10 @@ export function getDixaApiKey(): string {
 
 /**
  * Creates the Authorization header value with Bearer prefix
+ * @param session Optional session context that may contain auth information
  */
-export function getAuthHeader(): string {
-  return `Bearer ${getDixaApiKey()}`;
+export function getAuthHeader(session?: Record<string, unknown> | undefined): string {
+  return `Bearer ${getDixaApiKey(session)}`;
 }
 
 /**

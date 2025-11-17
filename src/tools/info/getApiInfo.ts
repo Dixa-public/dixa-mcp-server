@@ -15,14 +15,14 @@ export const getApiInfo = {
   name: "getApiInfo",
   description: "Preview the configured DIXA_API_KEY (masked) and get information about the associated organization",
   parameters: z.object({}),
-  execute: async (args, { log }) => {
+  execute: async (args, { log, session }) => {
     let apiKey: string | null = null;
     let maskedKey = "NOT SET";
     let apiKeyLength = 0;
     let isSet = false;
 
     try {
-      apiKey = getDixaApiKey();
+      apiKey = getDixaApiKey(session);
       maskedKey = maskApiKey(apiKey);
       apiKeyLength = apiKey.length;
       isSet = true;

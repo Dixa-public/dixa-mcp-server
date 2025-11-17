@@ -7,8 +7,35 @@ import requests
 from typing import Dict, Any, Optional
 
 
-def get_api_key() -> str:
-    """Get the Dixa API key from environment variable."""
+def get_api_key(session: Optional[Dict[str, Any]] = None) -> str:
+    """
+    Get the Dixa API key from session context or environment variable.
+    Priority: session auth > environment variable
+    
+    Args:
+        session: Optional session context that may contain auth information
+                 (for FastMCP Cloud config overrides via 'auth' field)
+    
+    Returns:
+        The API key string
+    """
+    # First, try to get API key from session context (for FastMCP Cloud config overrides)
+    if session:
+        # Check common auth field names that might be used in MCP config
+        session_api_key = (
+            session.get("apiKey") or
+            session.get("token") or
+            session.get("auth") or
+            session.get("DIXA_API_KEY") or
+            session.get("dixaApiKey")
+        )
+        
+        if session_api_key and isinstance(session_api_key, str):
+            trimmed = session_api_key.strip()
+            if trimmed:
+                return trimmed
+    
+    # Fall back to environment variable
     api_key = os.getenv("DIXA_API_KEY")
     if not api_key:
         # Check if the variable exists but is empty
@@ -19,7 +46,8 @@ def get_api_key() -> str:
             )
         raise ValueError(
             "DIXA_API_KEY environment variable is not set. "
-            "Please set it in your FastMCP Cloud dashboard under Environment Variables."
+            "Please set it in your FastMCP Cloud dashboard under Environment Variables "
+            "or provide it via the 'auth' field in MCP server configuration."
         )
     # Trim whitespace in case there are accidental spaces
     api_key = api_key.strip()
@@ -37,6 +65,7 @@ def make_request(
     params: Optional[Dict[str, Any]] = None,
     json_data: Optional[Dict[str, Any]] = None,
     log=None,
+    session: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     Make an HTTP request to the Dixa API.
@@ -47,11 +76,12 @@ def make_request(
         params: Query parameters (for GET requests)
         json_data: JSON body (for POST/PUT requests)
         log: Optional logger for debugging
+        session: Optional session context that may contain auth information
     
     Returns:
         Formatted JSON string
     """
-    api_key = get_api_key()
+    api_key = get_api_key(session)
     
     # Log that API key is present (without exposing the value)
     if log:

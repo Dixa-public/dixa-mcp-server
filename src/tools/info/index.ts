@@ -1,0 +1,2 @@
+export { getApiInfo } from "./getApiInfo";
+

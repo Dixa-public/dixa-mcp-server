@@ -122,3 +122,6 @@ await client.connect(transport);
 - `getAnalyticsFilter`: Get possible values for a given analytics filter attribute
 - `getAnalyticsRecordsData`: Get analytics data for a specific record with filters and period settings
 - `getAnalyticsMetricsData`: Get analytics data for a specific metric with filters, period settings, and aggregations
+
+### Information & Diagnostics
+- `getApiInfo`: Preview the configured DIXA_API_KEY (masked) and get information about the associated organization

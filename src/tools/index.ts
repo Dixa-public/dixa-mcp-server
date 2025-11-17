@@ -32,6 +32,9 @@ import {
   getAgent,
   listAgents,
 } from "./agents";
+import {
+  getApiInfo,
+} from "./info";
 
 const server = new FastMCP({
   name: "Dixa MCP Server",
@@ -67,6 +70,9 @@ server.addTool(getEndUserConversations);
 // Register agent tools
 server.addTool(getAgent);
 server.addTool(listAgents);
+
+// Register info tools
+server.addTool(getApiInfo);
 
 // Start server with stdio transport
 server.start({

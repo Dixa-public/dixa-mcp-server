@@ -35,6 +35,9 @@ from tools.analytics import (
     get_analytics_records_data,
     get_analytics_metrics_data,
 )
+from tools.info import (
+    get_api_info,
+)
 
 # Create the FastMCP server
 mcp = FastMCP("Dixa MCP Server")
@@ -68,6 +71,9 @@ mcp.tool()(list_analytics_metrics)
 mcp.tool()(get_analytics_filter)
 mcp.tool()(get_analytics_records_data)
 mcp.tool()(get_analytics_metrics_data)
+
+# Register info tools
+mcp.tool()(get_api_info)
 
 if __name__ == "__main__":
     mcp.run()

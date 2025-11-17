@@ -40,6 +40,11 @@ def get_api_info(log=None, session=None) -> str:
         masked_key = mask_api_key(api_key)
         
         if log:
+            # Debug: log session info to help diagnose auth issues
+            if session:
+                log.debug(f"Session provided: {list(session.keys()) if isinstance(session, dict) else 'not a dict'}")
+            else:
+                log.debug("No session provided, using environment variable or context")
             log.debug("Fetching organization information")
         
         # Try to get organization info from Dixa API

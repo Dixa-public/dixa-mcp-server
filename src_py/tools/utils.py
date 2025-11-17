@@ -5,6 +5,21 @@ import os
 import json
 import requests
 from typing import Dict, Any, Optional
+from contextvars import ContextVar
+
+# Context variable to store the current session/auth
+# This allows tools to access the session even if not passed as parameter
+_current_session: ContextVar[Optional[Dict[str, Any]]] = ContextVar('_current_session', default=None)
+
+
+def set_session(session: Optional[Dict[str, Any]]) -> None:
+    """Set the current session context (called by FastMCP if session is available)"""
+    _current_session.set(session)
+
+
+def get_current_session() -> Optional[Dict[str, Any]]:
+    """Get the current session from context"""
+    return _current_session.get()
 
 
 def get_api_key(session: Optional[Dict[str, Any]] = None) -> str:
@@ -15,19 +30,26 @@ def get_api_key(session: Optional[Dict[str, Any]] = None) -> str:
     Args:
         session: Optional session context that may contain auth information
                  (for FastMCP Cloud config overrides via 'auth' field)
+                 If not provided, will try to get from context variable
     
     Returns:
         The API key string
     """
+    # If session not provided, try to get from context variable
+    if session is None:
+        session = get_current_session()
+    
     # First, try to get API key from session context (for FastMCP Cloud config overrides)
     # The auth object from MCP config is passed as the session
+    # FastMCP Cloud might pass it as: { "DIXA_API_KEY": "..." } or { "apiKey": "..." }
     if session:
         # Check common auth field names that might be used in MCP config
         # FastMCP Cloud passes auth object like: { "apiKey": "..." }
         session_api_key = None
         
         # Try different field names in order of likelihood
-        for field_name in ["apiKey", "token", "auth", "DIXA_API_KEY", "dixaApiKey"]:
+        # Prioritize DIXA_API_KEY since that's what users might use in config
+        for field_name in ["DIXA_API_KEY", "apiKey", "token", "auth", "dixaApiKey"]:
             value = session.get(field_name)
             if value and isinstance(value, str):
                 session_api_key = value
@@ -80,15 +102,22 @@ def make_request(
         json_data: JSON body (for POST/PUT requests)
         log: Optional logger for debugging
         session: Optional session context that may contain auth information
+                 If not provided, will try to get from context variable
     
     Returns:
         Formatted JSON string
     """
+    # If session not provided, try to get from context variable
+    if session is None:
+        session = get_current_session()
+    
     api_key = get_api_key(session)
     
     # Log that API key is present (without exposing the value)
     if log:
-        log.debug(f"API key is set (length: {len(api_key)} characters)")
+        # Log session info for debugging (without exposing sensitive data)
+        session_source = "session" if session else "environment"
+        log.debug(f"API key source: {session_source}, length: {len(api_key)} characters")
         log.debug(f"Request {method} {url}")
         if json_data:
             log.debug(f"Request body: {json.dumps(json_data, indent=2)}")

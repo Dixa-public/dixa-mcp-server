@@ -20,17 +20,20 @@ def get_api_key(session: Optional[Dict[str, Any]] = None) -> str:
         The API key string
     """
     # First, try to get API key from session context (for FastMCP Cloud config overrides)
+    # The auth object from MCP config is passed as the session
     if session:
         # Check common auth field names that might be used in MCP config
-        session_api_key = (
-            session.get("apiKey") or
-            session.get("token") or
-            session.get("auth") or
-            session.get("DIXA_API_KEY") or
-            session.get("dixaApiKey")
-        )
+        # FastMCP Cloud passes auth object like: { "apiKey": "..." }
+        session_api_key = None
         
-        if session_api_key and isinstance(session_api_key, str):
+        # Try different field names in order of likelihood
+        for field_name in ["apiKey", "token", "auth", "DIXA_API_KEY", "dixaApiKey"]:
+            value = session.get(field_name)
+            if value and isinstance(value, str):
+                session_api_key = value
+                break
+        
+        if session_api_key:
             trimmed = session_api_key.strip()
             if trimmed:
                 return trimmed

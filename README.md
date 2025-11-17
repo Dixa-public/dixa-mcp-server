@@ -2,6 +2,10 @@
 
 This is a FastMCP server that provides tools for interacting with the Dixa API. It allows you to search conversations, get conversation details, manage tags, and more.
 
+## FastMCP Cloud Configuration
+
+For deploying to FastMCP Cloud and configuring per-user API keys, see [FASTMCP_CLOUD_CONFIG.md](./FASTMCP_CLOUD_CONFIG.md).
+
 ## Running the Server
 
 To run the server, you need to:

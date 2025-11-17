@@ -10,16 +10,26 @@
  */
 export function getDixaApiKey(session?: Record<string, unknown> | undefined): string {
   // First, try to get API key from session context (for FastMCP Cloud config overrides)
+  // The auth object from MCP config is passed as the session
   if (session) {
     // Check common auth field names that might be used in MCP config
-    const sessionApiKey = 
-      (session.apiKey as string) ||
-      (session.token as string) ||
-      (session.auth as string) ||
-      (session.DIXA_API_KEY as string) ||
-      (session.dixaApiKey as string);
+    // FastMCP Cloud passes auth object like: { apiKey: "..." }
+    let sessionApiKey: string | undefined;
     
-    if (sessionApiKey && typeof sessionApiKey === 'string') {
+    // Direct field access (most common for FastMCP Cloud)
+    if (session.apiKey && typeof session.apiKey === 'string') {
+      sessionApiKey = session.apiKey;
+    } else if (session.token && typeof session.token === 'string') {
+      sessionApiKey = session.token;
+    } else if (session.auth && typeof session.auth === 'string') {
+      sessionApiKey = session.auth;
+    } else if (session.DIXA_API_KEY && typeof session.DIXA_API_KEY === 'string') {
+      sessionApiKey = session.DIXA_API_KEY;
+    } else if (session.dixaApiKey && typeof session.dixaApiKey === 'string') {
+      sessionApiKey = session.dixaApiKey;
+    }
+    
+    if (sessionApiKey) {
       const trimmed = sessionApiKey.trim();
       if (trimmed) {
         return trimmed;
